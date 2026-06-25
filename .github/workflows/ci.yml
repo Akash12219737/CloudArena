@@ -42,6 +42,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
+          cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -54,7 +55,10 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
           SYNC_DATABASE_URL: postgresql://test:test@localhost:5432/test
           SECRET_KEY: ci-test-secret-key-at-least-32-chars-long
-        run: pytest tests/ -v --tb=short || echo "No tests yet"
+          K8S_IN_CLUSTER: "false"
+          APP_ENV: development
+          DEBUG: "false"
+        run: pytest tests/ -v --tb=short
 
   # ── Frontend lint + build ───────────────────────────────────────────────────
   frontend:
@@ -71,11 +75,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          # No cache-dependency-path — we use npm install, not npm ci
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: Lint
         run: npm run lint || true

@@ -1,4 +1,6 @@
 from typing import List
+
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.user_repository import UserRepository
@@ -21,15 +23,13 @@ class AdminService:
 
     async def list_active_labs(self) -> List[LabResponse]:
         labs = await self.lab_repo.list_active()
-        return [LabResponse.model_validate(l) for l in labs]
+        return [LabResponse.model_validate(lab) for lab in labs]
 
     async def force_delete_lab(self, lab_id: int, admin_id: int) -> dict:
-        from app.services.lab_service import LabService
-        from app.db.models import UserRole, User
+        from app.services.lab_service import LabService  # avoid circular import
 
         lab = await self.lab_repo.get_by_id(lab_id)
         if not lab:
-            from fastapi import HTTPException
             raise HTTPException(status_code=404, detail="Lab not found")
 
         lab_service = LabService(self.db)
