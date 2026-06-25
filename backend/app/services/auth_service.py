@@ -1,11 +1,10 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import verify_password, create_access_token, create_refresh_token, decode_token
 from app.repositories.user_repository import UserRepository
 from app.repositories.audit_repository import AuditRepository
 from app.schemas.user import UserRegisterRequest, UserLoginRequest, TokenResponse
-from app.db.models import UserRole
 
 
 class AuthService:
