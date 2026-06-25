@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudarena-frontend
+  namespace: cloudarena
+  labels:
+    app: cloudarena-frontend
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudarena-frontend
+  template:
+    metadata:
+      labels:
+        app: cloudarena-frontend
+        tier: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: YOUR_DOCKERHUB_USERNAME/cloudarena-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudarena-frontend
+  namespace: cloudarena
+spec:
+  selector:
+    app: cloudarena-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP

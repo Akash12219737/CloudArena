@@ -1,0 +1,74 @@
+---
+# PersistentVolumeClaim for PostgreSQL data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: cloudarena
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp2  # AWS EBS gp2; change if using different cloud
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudarena-postgres
+  namespace: cloudarena
+  labels:
+    app: cloudarena-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudarena-postgres
+  template:
+    metadata:
+      labels:
+        app: cloudarena-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: cloudarena
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: cloudarena
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: cloudarena
+spec:
+  selector:
+    app: cloudarena-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP

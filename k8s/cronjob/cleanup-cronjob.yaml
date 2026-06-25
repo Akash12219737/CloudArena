@@ -1,0 +1,38 @@
+---
+# CronJob that calls the backend cleanup endpoint every 15 minutes
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: lab-cleanup-cronjob
+  namespace: cloudarena
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: lab-cleanup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: cleanup
+              image: curlimages/curl:latest
+              command:
+                - sh
+                - -c
+                - |
+                  curl -s -X POST \
+                    http://cloudarena-backend.cloudarena.svc.cluster.local:8000/api/v1/labs/cleanup/expired \
+                    -H "Content-Type: application/json" \
+                    && echo "Cleanup completed"
+              resources:
+                requests:
+                  cpu: "50m"
+                  memory: "32Mi"
+                limits:
+                  cpu: "100m"
+                  memory: "64Mi"

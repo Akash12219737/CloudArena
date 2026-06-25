@@ -1,0 +1,36 @@
+---
+# ServiceAccount for the backend (used to create/delete K8s resources)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloudarena-backend-sa
+  namespace: cloudarena
+  labels:
+    app: cloudarena
+---
+# ClusterRole giving the backend permission to manage lab namespaces/deployments/services
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudarena-lab-manager
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "services", "pods"]
+    verbs: ["get", "list", "create", "delete", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "delete", "watch"]
+---
+# Bind the ClusterRole to the backend ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudarena-backend-binding
+subjects:
+  - kind: ServiceAccount
+    name: cloudarena-backend-sa
+    namespace: cloudarena
+roleRef:
+  kind: ClusterRole
+  name: cloudarena-lab-manager
+  apiGroup: rbac.authorization.k8s.io

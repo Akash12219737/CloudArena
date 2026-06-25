@@ -1,0 +1,9 @@
+---
+# Platform namespace for all CloudArena components
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudarena
+  labels:
+    app.kubernetes.io/name: cloudarena
+    app.kubernetes.io/managed-by: cloudarena-platform

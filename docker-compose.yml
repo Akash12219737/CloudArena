@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: cloudarena-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cloudarena
+      POSTGRES_PASSWORD: cloudarena_pass
+      POSTGRES_DB: cloudarena
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudarena -d cloudarena"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cloudarena-net
+
+  # ── Backend ───────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cloudarena-backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: CloudArena
+      APP_ENV: development
+      DEBUG: "true"
+      SECRET_KEY: "dev-secret-key-change-in-production-at-least-32-chars"
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      DATABASE_URL: "postgresql+asyncpg://cloudarena:cloudarena_pass@postgres:5432/cloudarena"
+      SYNC_DATABASE_URL: "postgresql://cloudarena:cloudarena_pass@postgres:5432/cloudarena"
+      K8S_IN_CLUSTER: "false"
+      LAB_EXPIRY_HOURS: "2"
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:80,http://frontend"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cloudarena-net
+    volumes:
+      - ./backend:/app
+      - ~/.kube:/home/appuser/.kube:ro
+
+  # ── Frontend ──────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cloudarena-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - cloudarena-net
+
+  # ── DB Migration (one-shot) ───────────────────────────────────────────────────
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cloudarena-migrate
+    command: >
+      sh -c "cd /app && alembic upgrade head"
+    environment:
+      SYNC_DATABASE_URL: "postgresql://cloudarena:cloudarena_pass@postgres:5432/cloudarena"
+      DATABASE_URL: "postgresql+asyncpg://cloudarena:cloudarena_pass@postgres:5432/cloudarena"
+      SECRET_KEY: "dev-secret-key-change-in-production-at-least-32-chars"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cloudarena-net
+    restart: "no"
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  cloudarena-net:
+    driver: bridge

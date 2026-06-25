@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudarena-config
+  namespace: cloudarena
+data:
+  APP_ENV: "production"
+  DEBUG: "false"
+  LAB_EXPIRY_HOURS: "2"
+  LAB_NAMESPACE_PREFIX: "cloudarena"
+  K8S_IN_CLUSTER: "true"
+  CORS_ORIGINS: "https://cloudarena.yourdomain.com"
+  API_V1_PREFIX: "/api/v1"
