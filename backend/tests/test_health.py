@@ -50,15 +50,15 @@ async def test_login_missing_fields_returns_422(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_protected_route_requires_token(client: AsyncClient):
-    """Any protected route should return 401 without a Bearer token."""
+    """Any protected route should return 403 without a Bearer token."""
     response = await client.get("/api/v1/users/me")
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_labs_list_requires_token(client: AsyncClient):
     response = await client.get("/api/v1/labs")
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
