@@ -249,24 +249,33 @@ kubectl get svc -n cloudarena
 |---|---|
 | `DOCKERHUB_USERNAME` | Your Docker Hub username |
 | `DOCKERHUB_TOKEN` | Docker Hub access token (Settings → Security) |
-| `KUBE_CONFIG` | Base64-encoded kubeconfig: `cat ~/.kube/config \| base64 -w 0` |
 
 ### Pipeline Flow
 
-```
-Push to main
+A GitHub-hosted runner cannot deploy directly to the Minikube cluster running on your laptop because it has no network access to your local machine. Therefore, we use a hybrid pipeline:
+
+```text
+Developer
     │
-    ├── ci.yml
-    │   ├── Backend lint (ruff) + tests
-    │   ├── Frontend lint + build
-    │   └── Docker build (validation, no push)
+    ▼
+GitHub
     │
-    └── deploy.yml (on main / tag)
-        ├── Build & push backend → Docker Hub
-        ├── Build & push frontend → Docker Hub
-        ├── kubectl apply all K8s manifests
-        ├── kubectl set image (rolling update)
-        └── kubectl rollout status (wait for healthy)
+    ▼
+GitHub Actions (ci.yml / deploy.yml)
+    │
+    ├── Run Tests
+    ├── Build Docker Images
+    └── Push Images to Docker Hub
+            │
+            ▼
+Your Local Machine
+            │
+docker pull yourusername/cloudarena-backend:latest
+docker pull yourusername/cloudarena-frontend:latest
+            │
+kubectl apply -f k8s/
+            ▼
+Minikube
 ```
 
 ---
