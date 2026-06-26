@@ -19,10 +19,7 @@ import select
 import struct
 import fcntl
 import termios
-from typing import Optional
-
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, WebSocket, Query
 
 from app.core.security import decode_token
 from app.db.session import AsyncSessionLocal
@@ -122,7 +119,6 @@ async def _handle_k8s_terminal(websocket: WebSocket, lab) -> None:
         await websocket.close()
         return
 
-    loop = asyncio.get_event_loop()
 
     async def recv_from_k8s():
         while ws_stream.is_open():
@@ -217,7 +213,6 @@ async def _handle_mock_terminal(websocket: WebSocket, lab) -> None:
     )
     os.close(slave_fd)
 
-    loop = asyncio.get_event_loop()
 
     async def read_pty():
         """Read PTY output and forward to WebSocket."""
