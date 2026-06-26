@@ -20,7 +20,7 @@
 8. [Verify the App is Working](#-step-8-verify-everything-is-working)
 9. [Push Your Code to GitHub](#-step-9-push-your-code-to-github)
 10. [Set Up Docker Hub](#-step-10-set-up-docker-hub-image-registry)
-11. [Set Up AWS EKS (Kubernetes Cluster)](#-step-11-set-up-aws-eks-kubernetes-cluster)
+11. [Set Up Minikube (Kubernetes Cluster)](#-step-11-set-up-minikube-kubernetes-cluster)
 12. [Deploy to Kubernetes Manually](#-step-12-deploy-to-kubernetes-manually)
 13. [Set Up GitHub Actions (Auto CI/CD)](#-step-13-set-up-github-actions-auto-cicd)
 14. [Verify Production Deployment](#-step-14-verify-production-deployment)
@@ -85,15 +85,15 @@ python --version
 # Should print: Python 3.12.x
 ```
 
-### 1.5 — AWS CLI
-Used to control your AWS account from the terminal.
+### 1.5 — Minikube
+Used to run a local Kubernetes cluster.
 ```
-Download: https://aws.amazon.com/cli/
+Download: https://minikube.sigs.k8s.io/docs/start/
 ```
 Verify:
 ```bash
-aws --version
-# Should print: aws-cli/2.x.x
+minikube version
+# Should print: minikube version: v1.x.x
 ```
 
 ### 1.6 — kubectl
@@ -711,93 +711,33 @@ git push origin main
 
 ---
 
-## ☁️ STEP 11: Set Up AWS EKS (Kubernetes Cluster)
+## ☁️ STEP 11: Set Up Minikube (Kubernetes Cluster)
 
-AWS EKS is a managed Kubernetes service. You pay AWS to run K8s for you.
+Minikube is a tool that makes it easy to run Kubernetes locally. It runs a single-node Kubernetes cluster inside a Virtual Machine or Docker container on your laptop.
 
-### 11.1 — Create an AWS Account (if you don't have one)
-
-```
-https://aws.amazon.com/free/
-```
-You need a credit card. The free tier gives you 750 hours/month of EC2.
-**EKS itself costs ~$0.10/hour for the control plane.**
-
-### 11.2 — Create an IAM User for CLI access
-
-Never use the root account for deployments.
-
-1. Go to **AWS Console** → search **IAM** → **Users** → **Create user**
-2. Username: `cloudarena-deployer`
-3. Attach permissions: `AdministratorAccess` (for now — restrict later)
-4. Click **Create user**
-5. Click on the user → **Security credentials** → **Create access key**
-6. Use case: **CLI**
-7. Click **Create** → **Download CSV** (save it safely!)
-
-### 11.3 — Configure AWS CLI
+### 11.1 — Start the Minikube Cluster
 
 ```bash
-aws configure
+minikube start --cpus=4 --memory=8192
 ```
 
-It asks 4 questions:
-```
-AWS Access Key ID: PASTE_YOUR_ACCESS_KEY_HERE
-AWS Secret Access Key: PASTE_YOUR_SECRET_KEY_HERE
-Default region name: us-east-1
-Default output format: json
-```
+Wait a few minutes. Minikube will download the necessary images and start the cluster.
 
-Verify it works:
-```bash
-aws sts get-caller-identity
-# Should show your account ID and username
-```
+### 11.2 — Enable Ingress Addon
 
-### 11.4 — Create the EKS Cluster
-
-This takes about 12–15 minutes. Run it and wait.
+CloudArena uses NGINX Ingress Controller to route traffic. Enable it in Minikube:
 
 ```bash
-# Create the cluster (adjust region if needed)
-aws eks create-cluster \
-  --name cloudarena-eks \
-  --role-arn arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):role/cloudarena-eks-cluster-role \
-  --resources-vpc-config subnetIds=subnet-XXXX,subnet-YYYY \
-  --kubernetes-version 1.30 \
-  --region us-east-1
+minikube addons enable ingress
 ```
 
-> ⚠️ Before running this you need:
-> - IAM roles (see full guide in `docs/deployment.md`, Step 2)
-> - A VPC with subnets (see `docs/deployment.md`, Step 1)
->
-> **Easiest shortcut:** Use `eksctl` (one command creates everything):
-> ```bash
-> # Install eksctl: https://eksctl.io/installation/
-> eksctl create cluster \
->   --name cloudarena-eks \
->   --region us-east-1 \
->   --nodegroup-name cloudarena-nodes \
->   --node-type t3.medium \
->   --nodes 2 \
->   --nodes-min 1 \
->   --nodes-max 3 \
->   --managed
-> ```
-> Wait 12–15 minutes. eksctl creates VPC, subnets, IAM roles, EKS cluster, and node group.
+### 11.3 — Connect kubectl to Minikube
 
-### 11.5 — Connect kubectl to EKS
+Minikube automatically configures `kubectl` for you during start, but you can verify it:
 
 ```bash
-aws eks update-kubeconfig \
-  --name cloudarena-eks \
-  --region us-east-1
-
-# Verify kubectl is connected to EKS
 kubectl get nodes
-# Should list 2 nodes with status "Ready"
+# Should list 1 node named "minikube" with status "Ready"
 ```
 
 ### 11.6 — Install NGINX Ingress Controller
@@ -956,7 +896,7 @@ After this setup, every push to `main` automatically:
 ### 13.1 — Get your kubeconfig as base64
 
 ```bash
-# Run this on your local machine (after kubectl is configured for EKS):
+# Run this on your local machine (after kubectl is configured for Minikube):
 cat ~/.kube/config | base64 -w 0
 # Windows PowerShell:
 [Convert]::ToBase64String([System.IO.File]::ReadAllBytes("$HOME\.kube\config"))
@@ -1111,10 +1051,13 @@ docker login
 
 ### ❌ kubectl: "Unable to connect to the server"
 
-**Cause:** kubeconfig not set up or expired.
+**Cause:** kubeconfig not set up or Minikube is not running.
 ```bash
-# Refresh EKS credentials:
-aws eks update-kubeconfig --name cloudarena-eks --region us-east-1
+# Ensure Minikube is running:
+minikube status
+
+# If stopped, start it:
+minikube start
 
 # Verify:
 kubectl get nodes

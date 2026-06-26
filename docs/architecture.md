@@ -8,12 +8,12 @@
 └──────────────────────────┬──────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────┐
-│          AWS Load Balancer                              │
-│          (TLS termination · manually created)           │
+│          Minikube IP / Tunnel                           │
+│          (Local Port Forwarding)                        │
 └──────────────────────────┬──────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────┐
-│         NGINX Ingress Controller (EKS)                  │
+│         NGINX Ingress Controller (Minikube)             │
 │   /api/*  →  backend:8000                               │
 │   /*      →  frontend:80                                │
 └──────┬────────────────────────────────┬─────────────────┘
@@ -28,7 +28,7 @@
                           │                         │
                   ┌───────▼──────┐        ┌────────▼────────┐
                   │  PostgreSQL  │        │  Kubernetes API │
-                  │  Port 5432   │        │  (AWS EKS)      │
+                  │  Port 5432   │        │  (Minikube)       │
                   └──────────────┘        └────────┬────────┘
                                                    │
                               ┌────────────────────┼────────────────────┐
@@ -122,21 +122,18 @@ GitHub Actions: deploy.yml
   └── kubectl rollout status (verify healthy)
 ```
 
-## Infrastructure Overview (Manual AWS Setup)
+## Infrastructure Overview (Minikube Setup)
 
 ```
-AWS Account
-  └── VPC (manually created)
-        ├── Public Subnets (2–3 AZs)
-        │     └── AWS Load Balancer (ALB)
-        └── Private Subnets (2–3 AZs)
-              └── EKS Node Group
-                    ├── NGINX Ingress Controller
-                    ├── CloudArena Backend Pod(s)
-                    ├── CloudArena Frontend Pod(s)
-                    ├── PostgreSQL Pod + PVC
-                    ├── Lab Pods (per user, isolated namespaces)
-                    └── Cleanup CronJob
+Local Machine (Host)
+  └── Minikube VM/Container
+        └── Kubernetes Node
+              ├── NGINX Ingress Controller
+              ├── CloudArena Backend Pod(s)
+              ├── CloudArena Frontend Pod(s)
+              ├── PostgreSQL Pod + PVC
+              ├── Lab Pods (per user, isolated namespaces)
+              └── Cleanup CronJob
 ```
 
 ## Database Schema

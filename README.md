@@ -6,7 +6,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=for-the-badge&logo=fastapi)
 ![React](https://img.shields.io/badge/React-18-61dafb?style=for-the-badge&logo=react)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.30-326ce5?style=for-the-badge&logo=kubernetes)
-![AWS EKS](https://img.shields.io/badge/AWS-EKS-FF9900?style=for-the-badge&logo=amazonaws)
+![Minikube](https://img.shields.io/badge/Minikube-Local_K8s-326ce5?style=for-the-badge&logo=kubernetes&logoColor=white)
 ![Docker Hub](https://img.shields.io/badge/Docker%20Hub-Registry-2496ED?style=for-the-badge&logo=docker)
 
 **Hands-on DevOps practice environments, provisioned on demand using Kubernetes.**
@@ -87,7 +87,7 @@ NGINX Ingress Controller
 | Containers | Docker, Docker Compose |
 | Container Registry | Docker Hub |
 | Orchestration | Kubernetes 1.30 |
-| Cloud | AWS EKS (manually provisioned) |
+| Cloud | Minikube (Local Kubernetes) |
 | CI/CD | GitHub Actions |
 | Networking | NGINX Ingress Controller |
 
@@ -202,11 +202,11 @@ docker compose down -v
 
 ---
 
-## ☸️ Kubernetes Deployment (AWS EKS)
+## ☸️ Kubernetes Deployment (Minikube)
 
 ### Prerequisites
 
-- AWS EKS cluster already created (see [docs/deployment.md](docs/deployment.md) for manual setup)
+- Minikube installed and running (see [docs/deployment.md](docs/deployment.md) for local setup)
 - `kubectl` configured and pointing at your cluster
 - Docker Hub images already pushed
 

@@ -11,7 +11,7 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: gp2  # AWS EBS gp2; change if using different cloud
+  storageClassName: standard  # Minikube default standard class
 ---
 apiVersion: apps/v1
 kind: Deployment

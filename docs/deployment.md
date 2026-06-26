@@ -65,120 +65,36 @@ Update `k8s/backend/deployment.yaml` and `k8s/frontend/deployment.yaml` with you
 
 ---
 
-## 3. AWS EKS — Manual Cluster Setup
+## 3. Minikube — Local Cluster Setup
 
-> Infrastructure is provisioned manually via the AWS Console or AWS CLI. No IaC tooling is required.
+> Infrastructure is provisioned locally via Minikube. No cloud resources are required.
 
-### Step 1 — Create VPC
+### Step 1 — Start Minikube
 
 ```bash
-# Using AWS CLI (or use the Console)
-aws ec2 create-vpc --cidr-block 10.0.0.0/16 --region us-east-1
-
-# Create public subnets (for load balancer)
-aws ec2 create-subnet --vpc-id <VPC_ID> --cidr-block 10.0.1.0/24 --availability-zone us-east-1a
-aws ec2 create-subnet --vpc-id <VPC_ID> --cidr-block 10.0.2.0/24 --availability-zone us-east-1b
-
-# Create private subnets (for EKS nodes)
-aws ec2 create-subnet --vpc-id <VPC_ID> --cidr-block 10.0.101.0/24 --availability-zone us-east-1a
-aws ec2 create-subnet --vpc-id <VPC_ID> --cidr-block 10.0.102.0/24 --availability-zone us-east-1b
-
-# Internet Gateway
-aws ec2 create-internet-gateway
-aws ec2 attach-internet-gateway --vpc-id <VPC_ID> --internet-gateway-id <IGW_ID>
-
-# NAT Gateway (in each public subnet for private subnet egress)
-aws ec2 allocate-address --domain vpc
-aws ec2 create-nat-gateway --subnet-id <PUBLIC_SUBNET_ID> --allocation-id <EIP_ALLOC_ID>
+minikube start --cpus=4 --memory=8192
 ```
 
-### Step 2 — Create IAM Roles
+Wait for Minikube to download images and start the cluster.
 
-**EKS Cluster Role:**
+### Step 2 — Verify kubectl
+
+Minikube configures `kubectl` automatically.
 ```bash
-# Create role with eks.amazonaws.com trust policy
-aws iam create-role \
-  --role-name cloudarena-eks-cluster-role \
-  --assume-role-policy-document '{
-    "Version":"2012-10-17",
-    "Statement":[{"Effect":"Allow","Principal":{"Service":"eks.amazonaws.com"},"Action":"sts:AssumeRole"}]
-  }'
-
-aws iam attach-role-policy \
-  --role-name cloudarena-eks-cluster-role \
-  --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-```
-
-**EKS Node Group Role:**
-```bash
-aws iam create-role \
-  --role-name cloudarena-eks-node-role \
-  --assume-role-policy-document '{
-    "Version":"2012-10-17",
-    "Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]
-  }'
-
-for policy in AmazonEKSWorkerNodePolicy AmazonEKS_CNI_Policy AmazonEC2ContainerRegistryReadOnly; do
-  aws iam attach-role-policy \
-    --role-name cloudarena-eks-node-role \
-    --policy-arn "arn:aws:iam::aws:policy/$policy"
-done
-```
-
-### Step 3 — Create EKS Cluster
-
-```bash
-aws eks create-cluster \
-  --name cloudarena-eks \
-  --role-arn arn:aws:iam::<ACCOUNT_ID>:role/cloudarena-eks-cluster-role \
-  --resources-vpc-config subnetIds=<PRIVATE_SUBNET_1>,<PRIVATE_SUBNET_2>,securityGroupIds=<SG_ID> \
-  --kubernetes-version 1.30 \
-  --region us-east-1
-
-# Wait for cluster to become ACTIVE (~10 min)
-aws eks wait cluster-active --name cloudarena-eks --region us-east-1
-```
-
-### Step 4 — Add Node Group
-
-```bash
-aws eks create-nodegroup \
-  --cluster-name cloudarena-eks \
-  --nodegroup-name cloudarena-nodes \
-  --node-role arn:aws:iam::<ACCOUNT_ID>:role/cloudarena-eks-node-role \
-  --subnets <PRIVATE_SUBNET_1> <PRIVATE_SUBNET_2> \
-  --instance-types t3.medium \
-  --scaling-config minSize=1,maxSize=5,desiredSize=2 \
-  --region us-east-1
-
-# Wait for nodes
-aws eks wait nodegroup-active \
-  --cluster-name cloudarena-eks \
-  --nodegroup-name cloudarena-nodes \
-  --region us-east-1
-```
-
-### Step 5 — Configure kubectl
-
-```bash
-aws eks update-kubeconfig \
-  --name cloudarena-eks \
-  --region us-east-1
-
-# Verify
 kubectl get nodes
+# Should list 1 node named "minikube"
 ```
 
-### Step 6 — Install NGINX Ingress Controller
+### Step 3 — Enable NGINX Ingress Controller
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/aws/deploy.yaml
+minikube addons enable ingress
 
-# Wait for LoadBalancer to be assigned
-kubectl get svc -n ingress-nginx ingress-nginx-controller -w
+# Wait for Ingress controller to be ready
+kubectl get pods -n ingress-nginx -w
 ```
 
-### Step 7 — Deploy CloudArena
+### Step 4 — Deploy CloudArena
 
 ```bash
 # Update image names in K8s manifests first:
@@ -201,19 +117,18 @@ kubectl get pods -n cloudarena
 kubectl get ingress -n cloudarena
 ```
 
-### Step 8 — DNS Setup
+### Step 5 — DNS Setup
 
-1. Get the Load Balancer DNS from:
+1. Get the Minikube IP:
    ```bash
-   kubectl get svc -n ingress-nginx ingress-nginx-controller
+   minikube ip
    ```
-2. In your DNS provider, create a **CNAME** record:
-   - `cloudarena.yourdomain.com` → `<ALB-DNS-NAME>`
-3. Update `k8s/ingress/ingress.yaml` with your domain.
-4. (Optional) Install cert-manager for automatic TLS:
-   ```bash
-   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
+2. Add an entry to your `/etc/hosts` file (or `C:\Windows\System32\drivers\etc\hosts` on Windows):
    ```
+   <MINIKUBE_IP> cloudarena.local
+   ```
+3. Update `k8s/ingress/ingress.yaml` with the domain `cloudarena.local`.
+4. (Optional) Run `minikube tunnel` if the ingress is not reachable via `minikube ip`.
 
 ---
 
@@ -246,7 +161,7 @@ Go to **Repository → Settings → Secrets and variables → Actions** and add:
 |---|---|
 | `DOCKERHUB_USERNAME` | Your Docker Hub username |
 | `DOCKERHUB_TOKEN` | Docker Hub → Account Settings → Security → New Access Token |
-| `KUBE_CONFIG` | `cat ~/.kube/config \| base64 -w 0` (run after step 5 above) |
+| `KUBE_CONFIG` | `cat ~/.kube/config \| base64 -w 0` |
 
 ### Pipeline Triggers
 
