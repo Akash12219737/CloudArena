@@ -33,6 +33,9 @@ api.interceptors.response.use(
           useAuthStore.getState().logout()
           window.location.href = '/login'
         }
+      } else {
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
       }
     }
     return Promise.reject(error)

@@ -240,17 +240,16 @@ class KubernetesClient:
             logger.error(f"Failed to get pod status in {namespace}: {e}")
             return {"phase": "Unknown", "pod_name": None, "pod_ip": None, "ready": False}
 
-    def exec_stream(self, namespace: str, pod_name: str, shell: str = "/bin/bash"):
+    def exec_stream(self, namespace: str, pod_name: str, command: list):
         """
         Open an interactive exec stream to a pod container.
         Returns the websocket_client stream object.
-        Falls back to /bin/sh if /bin/bash is unavailable.
         """
         return stream.stream(
             self._core.connect_get_namespaced_pod_exec,
             pod_name,
             namespace,
-            command=[shell],
+            command=command,
             stderr=True,
             stdin=True,
             stdout=True,

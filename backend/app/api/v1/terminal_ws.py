@@ -108,13 +108,14 @@ async def _handle_k8s_terminal(websocket: WebSocket, lab) -> None:
         f"\r\n🚀 Connecting to pod {pod_name}...\r\n\r\n".encode()
     )
 
-    # Try bash first, fall back to sh
-    for shell in ["/bin/bash", "/bin/sh"]:
-        try:
-            ws_stream = k8s_client.exec_stream(lab.namespace_name, pod_name, shell)
-            break
-        except Exception:
-            ws_stream = None
+    try:
+        ws_stream = k8s_client.exec_stream(
+            lab.namespace_name,
+            pod_name,
+            command=["/bin/sh", "-c", "exec bash || exec sh"]
+        )
+    except Exception:
+        ws_stream = None
 
     if not ws_stream:
         await websocket.send_text("❌ Failed to open exec stream.")
@@ -136,9 +137,7 @@ async def _handle_k8s_terminal(websocket: WebSocket, lab) -> None:
                     await websocket.send_bytes(data.encode())
             await asyncio.sleep(0.01)
 
-    k8s_task = asyncio.create_task(recv_from_k8s())
-
-    try:
+    async def read_from_ws():
         while True:
             raw = await websocket.receive_bytes()
             if not raw:
@@ -153,14 +152,27 @@ async def _handle_k8s_terminal(websocket: WebSocket, lab) -> None:
                 # resize
                 try:
                     dims = json.loads(payload)
-                    ws_stream.write_channel(4, chr(dims.get("cols", 80)) + chr(dims.get("rows", 24)))
+                    resize_msg = json.dumps({
+                        "Width": dims.get("cols", 80),
+                        "Height": dims.get("rows", 24)
+                    })
+                    ws_stream.write_channel(4, resize_msg)
                 except Exception:
                     pass
 
-    except (WebSocketDisconnect, Exception):
+    task1 = asyncio.create_task(recv_from_k8s())
+    task2 = asyncio.create_task(read_from_ws())
+
+    try:
+        done, pending = await asyncio.wait(
+            [task1, task2],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+    except Exception:
         pass
     finally:
-        k8s_task.cancel()
         try:
             ws_stream.close()
         except Exception:
@@ -221,9 +233,7 @@ async def _handle_mock_terminal(websocket: WebSocket, lab) -> None:
                 break
             await asyncio.sleep(0.01)
 
-    pty_task = asyncio.create_task(read_pty())
-
-    try:
+    async def read_from_ws():
         while proc.poll() is None:
             raw = await websocket.receive_bytes()
             if not raw:
@@ -246,10 +256,19 @@ async def _handle_mock_terminal(websocket: WebSocket, lab) -> None:
                 except Exception:
                     pass
 
-    except (WebSocketDisconnect, Exception):
+    task1 = asyncio.create_task(read_pty())
+    task2 = asyncio.create_task(read_from_ws())
+
+    try:
+        done, pending = await asyncio.wait(
+            [task1, task2],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+    except Exception:
         pass
     finally:
-        pty_task.cancel()
         try:
             proc.terminate()
             proc.wait(timeout=3)
