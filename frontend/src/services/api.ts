@@ -61,6 +61,7 @@ export const labApi = {
   create: (lab_type: string) => api.post('/labs', { lab_type }),
   list: () => api.get('/labs'),
   get: (id: number) => api.get(`/labs/${id}`),
+  getPodStatus: (id: number) => api.get(`/labs/${id}/pod-status`),
   delete: (id: number) => api.delete(`/labs/${id}`),
 }
 

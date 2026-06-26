@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.api.router import api_router
+from app.db.session import AsyncSessionLocal
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -22,6 +23,28 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"🚀 {settings.APP_NAME} starting up in [{settings.APP_ENV}] mode")
+
+    # ── Seed the first admin user if it doesn't exist ─────────────────────────
+    try:
+        async with AsyncSessionLocal() as db:
+            from app.repositories.user_repository import UserRepository
+            from app.db.models import UserRole
+
+            repo = UserRepository(db)
+            existing = await repo.get_by_email(settings.FIRST_ADMIN_EMAIL)
+            if not existing:
+                admin = await repo.create(
+                    username="admin",
+                    email=settings.FIRST_ADMIN_EMAIL,
+                    password=settings.FIRST_ADMIN_PASSWORD,
+                    role=UserRole.ADMIN,
+                )
+                logger.info(f"✅ Admin user created: {admin.email}")
+            else:
+                logger.info(f"ℹ️  Admin user already exists: {existing.email}")
+    except Exception as exc:
+        logger.warning(f"⚠️  Could not seed admin user: {exc}")
+
     yield
     logger.info(f"🛑 {settings.APP_NAME} shutting down")
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, users, labs, admin, system
+from app.api.v1 import auth, users, labs, admin, system, terminal_ws
 
 api_router = APIRouter()
 
@@ -8,3 +8,4 @@ api_router.include_router(users.router)
 api_router.include_router(labs.router)
 api_router.include_router(admin.router)
 api_router.include_router(system.router)
+api_router.include_router(terminal_ws.router)

@@ -41,7 +41,11 @@ class User(Base):
     username = Column(String(64), unique=True, nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.USER, nullable=False)
+    role = Column(
+        Enum(UserRole, name="userrole", values_callable=lambda x: [e.value for e in x]),
+        default=UserRole.USER,
+        nullable=False,
+    )
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     labs = relationship("Lab", back_populates="user", cascade="all, delete-orphan")
@@ -53,11 +57,19 @@ class Lab(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    lab_type = Column(Enum(LabType), nullable=False)
+    lab_type = Column(
+        Enum(LabType, name="labtype", values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     namespace_name = Column(String(128), nullable=False)
     deployment_name = Column(String(128), nullable=False)
     service_name = Column(String(128), nullable=False)
-    status = Column(Enum(LabStatus), default=LabStatus.PENDING, nullable=False, index=True)
+    status = Column(
+        Enum(LabStatus, name="labstatus", values_callable=lambda x: [e.value for e in x]),
+        default=LabStatus.PENDING,
+        nullable=False,
+        index=True,
+    )
     expires_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 

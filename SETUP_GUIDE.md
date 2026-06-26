@@ -580,8 +580,9 @@ curl http://localhost:8000/api/v1/health
 1. From the Dashboard, click **"New Lab"**
 2. Select **Linux Lab** (click the card)
 3. Click **"Launch Lab"**
-4. A lab card should appear on the Dashboard with status "Running"
-   (In local mock mode, no real K8s pod is created — the lab is tracked in the DB)
+4. You should be redirected to the **Lab Details Page**.
+5. Wait for the pod status to become "Ready", then click **"Open Terminal"**.
+   (In local mock mode, a mock terminal will open since there is no real K8s cluster)
 
 ### 8.6 — Check the database directly
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 from app.db.models import LabType, LabStatus
 
@@ -24,3 +25,12 @@ class LabResponse(BaseModel):
 class LabListResponse(BaseModel):
     labs: list[LabResponse]
     total: int
+
+
+class PodStatusResponse(BaseModel):
+    """Real-time pod status returned by GET /labs/{id}/pod-status."""
+    phase: str                        # Running | Pending | Failed | Unknown | Succeeded
+    pod_name: Optional[str] = None
+    pod_ip: Optional[str] = None
+    ready: bool = False
+    mock: bool = False                # True when K8s is unavailable (mock mode)

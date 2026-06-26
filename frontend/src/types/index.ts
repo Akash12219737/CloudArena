@@ -23,6 +23,14 @@ export interface Lab {
   created_at: string
 }
 
+export interface PodStatus {
+  phase: string          // Running | Pending | Failed | Unknown | Succeeded
+  pod_name: string | null
+  pod_ip: string | null
+  ready: boolean
+  mock?: boolean
+}
+
 export interface TokenResponse {
   access_token: string
   refresh_token: string

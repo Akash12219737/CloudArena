@@ -13,15 +13,21 @@ class UserRepository:
         self.db = db
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
-        result = await self.db.execute(select(User).where(User.id == user_id))
+        result = await self.db.execute(
+            select(User).where(User.id == user_id)
+        )
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> Optional[User]:
-        result = await self.db.execute(select(User).where(User.email == email))
+        result = await self.db.execute(
+            select(User).where(User.email == email)
+        )
         return result.scalar_one_or_none()
 
     async def get_by_username(self, username: str) -> Optional[User]:
-        result = await self.db.execute(select(User).where(User.username == username))
+        result = await self.db.execute(
+            select(User).where(User.username == username)
+        )
         return result.scalar_one_or_none()
 
     async def create(
@@ -31,6 +37,7 @@ class UserRepository:
         password: str,
         role: UserRole = UserRole.USER,
     ) -> User:
+
         user = User(
             username=username,
             email=email,
@@ -38,17 +45,30 @@ class UserRepository:
             role=role,
             created_at=datetime.now(timezone.utc),
         )
+
         self.db.add(user)
-        await self.db.flush()
+
+        # Save into PostgreSQL
+        await self.db.commit()
+
+        # Reload object from DB
         await self.db.refresh(user)
+
         return user
 
     async def list_all(self, skip: int = 0, limit: int = 100) -> List[User]:
-        result = await self.db.execute(select(User).offset(skip).limit(limit))
+        result = await self.db.execute(
+            select(User).offset(skip).limit(limit)
+        )
         return list(result.scalars().all())
 
     async def update_profile(self, user_id: int, **kwargs) -> Optional[User]:
         await self.db.execute(
-            update(User).where(User.id == user_id).values(**kwargs)
+            update(User)
+            .where(User.id == user_id)
+            .values(**kwargs)
         )
+
+        await self.db.commit()
+
         return await self.get_by_id(user_id)

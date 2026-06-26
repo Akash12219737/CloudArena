@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Terminal, GitBranch, Container, Loader2, CheckCircle2, Zap, ChevronRight } from 'lucide-react'
 import { useLabStore } from '../store/labStore'
 import type { LabType, LabTypeInfo } from '../types'
@@ -41,6 +42,7 @@ const colorMap: Record<string, { border: string; bg: string; text: string; shado
 }
 
 const LabsPage: React.FC = () => {
+  const navigate = useNavigate()
   const [selected, setSelected] = useState<LabType | null>(null)
   const [creating, setCreating] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -53,12 +55,11 @@ const LabsPage: React.FC = () => {
     setErrMsg('')
     setSuccess(false)
     try {
-      await createLab(selected)
+      const lab = await createLab(selected)
       setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      navigate(`/labs/${lab.id}`)
     } catch (err: any) {
       setErrMsg(err.response?.data?.detail ?? 'Failed to create lab')
-    } finally {
       setCreating(false)
     }
   }

@@ -8,6 +8,8 @@ import DashboardPage from './pages/DashboardPage'
 import LabsPage from './pages/LabsPage'
 import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
+import TerminalPage from './pages/TerminalPage'
+import LabDetailPage from './pages/LabDetailPage'
 
 const App: React.FC = () => {
   return (
@@ -39,6 +41,16 @@ const App: React.FC = () => {
           }
         />
         <Route
+          path="/labs/:labId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <LabDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/history"
           element={
             <ProtectedRoute>
@@ -55,6 +67,16 @@ const App: React.FC = () => {
               <Layout>
                 <AdminPage />
               </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Terminal — full-screen, no Layout */}
+        <Route
+          path="/terminal/:labId"
+          element={
+            <ProtectedRoute>
+              <TerminalPage />
             </ProtectedRoute>
           }
         />

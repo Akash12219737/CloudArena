@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Lab } from '../types'
+import type { Lab, PodStatus } from '../types'
 import { labApi } from '../services/api'
 
 interface LabState {
@@ -7,8 +7,10 @@ interface LabState {
   loading: boolean
   error: string | null
   fetchLabs: () => Promise<void>
+  getLab: (id: number) => Promise<Lab>
   createLab: (type: string) => Promise<Lab>
   deleteLab: (id: number) => Promise<void>
+  getPodStatus: (id: number) => Promise<PodStatus>
 }
 
 export const useLabStore = create<LabState>((set, get) => ({
@@ -26,6 +28,11 @@ export const useLabStore = create<LabState>((set, get) => ({
     }
   },
 
+  getLab: async (id: number) => {
+    const { data } = await labApi.get(id)
+    return data as Lab
+  },
+
   createLab: async (lab_type: string) => {
     const { data } = await labApi.create(lab_type)
     set((state) => ({ labs: [data, ...state.labs] }))
@@ -40,4 +47,10 @@ export const useLabStore = create<LabState>((set, get) => ({
       ),
     }))
   },
+
+  getPodStatus: async (id: number) => {
+    const { data } = await labApi.getPodStatus(id)
+    return data as PodStatus
+  },
 }))
+

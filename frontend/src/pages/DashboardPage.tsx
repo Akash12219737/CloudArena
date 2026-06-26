@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react'
-import { Terminal, GitBranch, Container, Activity, Clock, Trash2, Plus, Zap } from 'lucide-react'
+import { Terminal, GitBranch, Container, Activity, Clock, Trash2, Plus, Zap, ExternalLink } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useLabStore } from '../store/labStore'
 import type { Lab, LabType } from '../types'
 import { formatDistanceToNow } from 'date-fns'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const LAB_META: Record<LabType, { icon: React.ReactNode; color: string; name: string; description: string }> = {
   linux: {
@@ -103,6 +103,7 @@ const DashboardPage: React.FC = () => {
 const LabCard: React.FC<{ lab: Lab; onDelete: (id: number) => void }> = ({ lab, onDelete }) => {
   const meta = LAB_META[lab.lab_type]
   const expiresIn = formatDistanceToNow(new Date(lab.expires_at), { addSuffix: true })
+  const navigate = useNavigate()
 
   return (
     <div className="glass-card-hover p-5 group">
@@ -128,14 +129,25 @@ const LabCard: React.FC<{ lab: Lab; onDelete: (id: number) => void }> = ({ lab, 
         </div>
       </div>
 
-      <button
-        id={`delete-lab-${lab.id}`}
-        onClick={() => onDelete(lab.id)}
-        className="btn-danger w-full justify-center"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-        Terminate Lab
-      </button>
+      {/* Action buttons */}
+      <div className="flex flex-col gap-2">
+        <button
+          id={`open-terminal-${lab.id}`}
+          onClick={() => navigate(`/terminal/${lab.id}`)}
+          className="btn-primary w-full justify-center py-2.5"
+        >
+          <Terminal className="w-3.5 h-3.5" />
+          Open Terminal
+        </button>
+        <button
+          id={`delete-lab-${lab.id}`}
+          onClick={() => onDelete(lab.id)}
+          className="btn-danger w-full justify-center"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Terminate Lab
+        </button>
+      </div>
     </div>
   )
 }

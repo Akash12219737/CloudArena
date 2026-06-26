@@ -2,7 +2,8 @@
 Per-lab-type Kubernetes resource templates.
 Returns the manifest dict (image, env, labels, port) for each lab type.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Optional
 from app.db.models import LabType
 
 
@@ -13,6 +14,8 @@ class LabTemplate:
     env_vars: dict
     port: int
     description: str
+    command: Optional[List[str]] = field(default=None)
+    args: Optional[List[str]] = field(default=None)
 
 
 LAB_TEMPLATES: dict[LabType, LabTemplate] = {
@@ -22,6 +25,8 @@ LAB_TEMPLATES: dict[LabType, LabTemplate] = {
         env_vars={"TERM": "xterm-256color"},
         port=22,
         description="Ubuntu 22.04 — practice Linux commands",
+        command=["sleep"],
+        args=["infinity"],
     ),
     LabType.GIT: LabTemplate(
         image="alpine/git:latest",
@@ -29,6 +34,8 @@ LAB_TEMPLATES: dict[LabType, LabTemplate] = {
         env_vars={"GIT_AUTHOR_NAME": "CloudArena", "GIT_AUTHOR_EMAIL": "lab@cloudarena.io"},
         port=22,
         description="Alpine + Git — practice Git workflows",
+        command=["sh"],
+        args=["-c", "sleep infinity"],
     ),
     LabType.DOCKER: LabTemplate(
         image="docker:24-dind",
@@ -36,6 +43,8 @@ LAB_TEMPLATES: dict[LabType, LabTemplate] = {
         env_vars={"DOCKER_TLS_CERTDIR": ""},
         port=2375,
         description="Docker-in-Docker — practice container operations",
+        command=["sh"],
+        args=["-c", "dockerd-entrypoint.sh & sleep infinity"],
     ),
 }
 

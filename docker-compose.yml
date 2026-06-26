@@ -1,4 +1,4 @@
-version: "3.9"
+# version: "3.9"
 
 services:
   # ── PostgreSQL ────────────────────────────────────────────────────────────────
@@ -42,6 +42,8 @@ services:
       K8S_IN_CLUSTER: "false"
       LAB_EXPIRY_HOURS: "2"
       CORS_ORIGINS: "http://localhost:5173,http://localhost:80,http://frontend"
+      FIRST_ADMIN_EMAIL: "admin@cloudarena.io"
+      FIRST_ADMIN_PASSWORD: "Admin@123456"
     ports:
       - "8000:8000"
     depends_on:

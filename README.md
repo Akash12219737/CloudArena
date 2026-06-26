@@ -37,6 +37,7 @@ CloudArena is a production-ready cloud-native platform that allows DevOps learne
 - 🔐 **JWT Authentication** — Register, Login, Refresh tokens
 - 🧪 **3 Lab Types** — Linux (Ubuntu), Git (Alpine+Git), Docker (DinD)
 - ⚡ **Real-time Provisioning** — FastAPI → Kubernetes API → Pod ready
+- 💻 **Interactive Terminal** — Browser-based xterm.js terminal with WebSocket pod connection
 - 🗑️ **Auto Cleanup** — CronJob deletes expired labs every 15 minutes
 - 📊 **Lab History** — Full audit trail of all sessions
 - 🛡️ **Admin Panel** — Force-delete labs, view all users
@@ -327,7 +328,7 @@ DELETE /api/v1/admin/labs/{id}      # Force delete any lab
 
 ## 🔮 Future Improvements
 
-- [ ] WebSocket terminal (xterm.js) inside the browser
+- [x] WebSocket terminal (xterm.js) inside the browser
 - [ ] Lab templates marketplace
 - [ ] Kubernetes resource usage metrics
 - [ ] Multi-tenant namespace quotas

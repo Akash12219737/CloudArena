@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.db.models import User
 from app.core.deps import get_current_user
-from app.schemas.lab import LabCreateRequest, LabResponse, LabListResponse
+from app.schemas.lab import LabCreateRequest, LabResponse, LabListResponse, PodStatusResponse
 from app.services.lab_service import LabService
+from app.kubernetes.k8s_client import k8s_client
 
 router = APIRouter(prefix="/labs", tags=["Labs"])
 
@@ -30,6 +31,23 @@ async def list_labs(
     service = LabService(db)
     labs = await service.list_user_labs(current_user.id)
     return LabListResponse(labs=labs, total=len(labs))
+
+
+@router.get("/{lab_id}/pod-status", response_model=PodStatusResponse)
+async def get_pod_status(
+    lab_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Return live Kubernetes pod phase, name, and IP for a lab.
+    Poll this until `ready=true` before opening the terminal.
+    """
+    service = LabService(db)
+    lab = await service.get_lab_detail(current_user, lab_id)
+    label_selector = f"lab-id={lab_id}"
+    status = k8s_client.get_pod_status(lab.namespace_name, label_selector)
+    return PodStatusResponse(**status)
 
 
 @router.get("/{lab_id}", response_model=LabResponse)
@@ -65,3 +83,4 @@ async def cleanup_expired(
     service = LabService(db)
     cleaned = await service.cleanup_expired_labs()
     return {"message": f"Cleaned up {cleaned} expired labs"}
+

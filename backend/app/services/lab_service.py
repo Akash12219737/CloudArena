@@ -56,6 +56,8 @@ class LabService:
             image=template.image,
             labels={**template.labels, "lab-id": str(lab.id)},
             env_vars=template.env_vars,
+            command=template.command,
+            args=template.args,
         )
         svc_ok = await k8s_client.create_service(
             namespace=names["namespace"],
